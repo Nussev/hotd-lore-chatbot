@@ -1,0 +1,228 @@
+You are a senior AI engineer helping me build a production-quality portfolio project.
+
+## 🧩 Project Overview
+
+I am building an AI-powered chatbot that models **House of the Dragon fandom discourse using Reddit data**.
+
+The system will:
+
+* ingest Reddit posts + comments
+* clean and filter for high-quality discussion
+* convert data into structured chunks
+* generate embeddings
+* store them in a vector database (FAISS)
+* retrieve relevant discussion based on user queries
+* use an LLM (Claude) to synthesize answers
+
+The goal is to build a **retrieval-augmented generation (RAG) system** that answers questions like:
+
+* “Why do people dislike Alicent?”
+* “What is the fandom consensus on Daemon?”
+* “How did sentiment change after Episode 7?”
+
+---
+
+## ✅ Current State
+
+I have already completed:
+
+* Python project setup with `.venv`
+* GitHub repo with proper branching
+* Raw Reddit dataset (JSONL format)
+* Initial parsing scripts
+* Post filtering pipeline (score, comments, etc.)
+
+I am about to finish downloading **comments dataset (~5GB)**.
+
+---
+
+## 🎯 Your Task
+
+Guide me through the **next phase of implementation** in a structured, step-by-step way.
+
+Focus on:
+
+* clean architecture
+* realistic implementation
+* production-quality patterns (but not overengineering)
+
+---
+
+## 🚧 Phase to Implement
+
+We are starting with:
+
+# 👉 PHASE 1: Build RAG-Ready Dataset
+
+---
+
+## 🔹 Step 1 — Define Chunking Strategy
+
+Help me decide how to transform Reddit data into “chunks” suitable for embeddings.
+
+Constraints:
+
+* Reddit comments are noisy and nested
+* Need high signal-to-noise ratio
+* Must support semantic retrieval
+
+Evaluate and recommend ONE approach:
+
+Options:
+
+1. Each comment = one chunk
+2. Each post thread = one chunk
+3. Hybrid approach (post + top comments + summaries)
+
+Then:
+
+* justify the choice
+* explain tradeoffs
+* define final schema
+
+---
+
+## 🔹 Step 2 — Design Chunk Schema
+
+Help me define a structured JSON schema for each chunk.
+
+Include fields like:
+
+* chunk_id
+* text
+* source_type (post, comment, thread)
+* post_id
+* score
+* characters (tags like daemon, rhaenyra)
+* episode (if inferable)
+* created_utc
+* metadata (flexible)
+
+Make this schema:
+
+* embedding-friendly
+* retrieval-friendly
+* future-proof
+
+---
+
+## 🔹 Step 3 — Data Processing Pipeline
+
+Help me design a clean ETL pipeline:
+
+Stages:
+
+1. ingest raw JSONL
+2. filter (score, comments, remove deleted)
+3. clean text
+4. group into threads
+5. generate chunks
+6. output to `data_clean/`
+
+Provide:
+
+* folder structure
+* function breakdown
+* clean separation of concerns
+
+---
+
+## 🔹 Step 4 — Thread Reconstruction Strategy
+
+Explain how to:
+
+* group comments by post_id
+* optionally flatten or summarize threads
+* handle nested replies
+
+Provide:
+
+* simple approach (MVP)
+* optional upgrade (later improvement)
+
+---
+
+## 🔹 Step 5 — Filtering Strategy Upgrade
+
+Help refine filtering rules for BOTH:
+
+* posts
+* comments
+
+Goal:
+
+* maximize signal
+* reduce noise
+
+Consider:
+
+* score thresholds
+* comment depth
+* engagement
+* controversial threads
+
+---
+
+## 🔹 Step 6 — Output Format
+
+Define how the final dataset should be saved:
+
+Options:
+
+* JSONL (preferred?)
+* one file per chunk
+* grouped by post
+
+Recommend ONE and explain why.
+
+---
+
+## 🔹 Step 7 — Validation Strategy
+
+Help me build a validation step:
+
+* how to check chunk quality
+* how to detect noise
+* how to verify tags
+* how to sample outputs
+
+---
+
+# 👉 PHASE 2: Embeddings + Vector Store (preview only)
+
+Briefly outline (do NOT fully implement yet):
+
+* embedding model choice
+* FAISS setup
+* metadata storage
+* retrieval flow
+
+---
+
+## ⚙️ Constraints
+
+* Keep implementation beginner-intermediate friendly
+* Avoid unnecessary frameworks (no heavy LangChain abstraction yet)
+* Prefer simple, readable Python
+* Prioritize clarity over cleverness
+
+---
+
+## 📦 Output Format
+
+Respond with:
+
+1. High-level architecture (short)
+2. Step-by-step implementation plan
+3. Code skeletons where helpful (not full code dump)
+4. Clear decisions and reasoning
+
+---
+
+## 🚀 Goal
+
+By the end of your response, I should be able to:
+
+* confidently implement the RAG-ready dataset pipeline
+* understand WHY each decision was made
+* move cleanly into embeddings next
