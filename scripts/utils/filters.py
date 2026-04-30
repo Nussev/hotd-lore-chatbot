@@ -1,3 +1,16 @@
+MOD_POST_KEYWORDS = [
+    "premiere",
+    "schedule",
+    "megathread",
+    "announcement",
+    "pinned",
+    "watch party",
+    "episode thread",
+    "discussion thread",
+    "mod post",
+    "weekly thread",
+]
+
 FILTER_RULES_POSTS = {
     "min_score": 100,
     "min_comments": 20,
@@ -5,6 +18,7 @@ FILTER_RULES_POSTS = {
     "exclude_deleted": True,
     "exclude_archived": True,
     "min_body_length": 50,
+    "exclude_mod_posts": True,
 }
 
 FILTER_RULES_COMMENTS = {
@@ -37,6 +51,11 @@ def filter_post(post, rules):
 
     if len(body.strip()) < rules["min_body_length"]:
         return False
+
+    if rules.get("exclude_mod_posts"):
+        title_lower = post.get("title", "").lower()
+        if any(kw in title_lower for kw in MOD_POST_KEYWORDS):
+            return False
 
     return True
 

@@ -1,118 +1,135 @@
+import argparse
+import os
+import sys
 import orjson
 from tqdm import tqdm
-import os
-print("🚀 Script started")
 
-#-------------------
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from utils.filters import FILTER_RULES_POSTS, filter_post
+from chunk_strategy import create_chunk
+
+# ----------------------------
 # FILE PATHS
-#-------------------
+# ----------------------------
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INPUT_FILE = os.path.join(ROOT, "data_raw", "r_HouseOfTheDragon_posts.jsonl")
-OUTPUT_FILE = os.path.join(ROOT, "data_clean", "hotd_clean_posts.jsonl")
+INPUT_POSTS    = os.path.join(ROOT, "data_raw", "r_HouseOfTheDragon_posts.jsonl")
+INPUT_COMMENTS = os.path.join(ROOT, "data_raw", "r_HouseOfTheDragon_comments.jsonl")
+OUTPUT_FILE    = os.path.join(ROOT, "data_clean", "hotd_chunks.jsonl")
 
-# -----------------------------
-# FILTER SETTINGS
-# -----------------------------
-MIN_SCORE = 100
-MIN_COMMENTS = 20
 
-# -----------------------------
-# TEXT CLEANING FUNCTION
-# -----------------------------
+# ----------------------------
+# HELPERS
+# ----------------------------
 def clean_text(text):
-    """
-    Cleans raw Reddit text by:
-    - removing None values
-    - stripping whitespace
-    - removing newline characters
-    """
     if not text:
         return ""
-
     return text.replace("\n", " ").replace("\r", " ").strip()
 
-# -----------------------------
-# VALIDATION FUNCTION
-# -----------------------------
-def is_valid_post(post):
-    """
-    Filters out low-quality or irrelevant posts
-    """
-    if post.get("score", 0) < MIN_SCORE:
-        return False
 
-    if post.get("num_comments", 0) < MIN_COMMENTS:
-        return False
+def group_comments_by_post(comments_path):
+    """Loads comments JSONL, groups by post_id, sorts each group by score desc."""
+    groups = {}
 
-    selftext = post.get("selftext", "")
+    if not os.path.exists(comments_path):
+        print(f"[WARN] Comments file not found: {comments_path}. Proceeding without comments.")
+        return groups
 
-    if selftext in ["[deleted]", "[removed]", ""]:
-        return False
+    print(f"Loading comments from: {comments_path}")
+    with open(comments_path, "r", encoding="utf-8") as f:
+        for line in tqdm(f, desc="Loading comments"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                comment = orjson.loads(line)
+            except Exception:
+                continue
 
-    return True
+            # parent_id format is "t3_<post_id>" for top-level comments
+            parent_id = comment.get("parent_id", "")
+            if not parent_id.startswith("t3_"):
+                continue
 
-# -----------------------------
+            post_id = parent_id[3:]
+            if post_id not in groups:
+                groups[post_id] = []
+            groups[post_id].append(comment)
+
+    for post_id in groups:
+        groups[post_id].sort(key=lambda c: c.get("score", 0), reverse=True)
+
+    print(f"Grouped comments for {len(groups)} posts.\n")
+    return groups
+
+
+# ----------------------------
 # MAIN PIPELINE
-# -----------------------------
-os.makedirs("data_clean", exist_ok=True)
+# ----------------------------
+def main():
+    parser = argparse.ArgumentParser(description="Process Reddit posts into RAG-ready chunks.")
+    parser.add_argument("--limit", type=int, default=None, help="Max posts to process (for test runs)")
+    args = parser.parse_args()
 
-with open(INPUT_FILE, "r", encoding="utf-8") as infile, \
-     open(OUTPUT_FILE, "w", encoding="utf-8") as outfile:
+    os.makedirs(os.path.join(ROOT, "data_clean"), exist_ok=True)
 
-    for line in tqdm(infile):
+    comments_by_post = group_comments_by_post(INPUT_COMMENTS)
 
-        try:
-            post = orjson.loads(line)
-        except:
-            continue  # skip bad lines
+    posts_loaded = 0
+    posts_passed = 0
+    chunks_written = 0
 
-        # ONLY keep HOTD subreddit posts
-        if post.get("subreddit") != "HouseOfTheDragon":
-            continue
+    print(f"Processing posts from : {INPUT_POSTS}")
+    print(f"Output                : {OUTPUT_FILE}\n")
 
-        # apply quality filter
-        if not is_valid_post(post):
-            continue
+    with open(INPUT_POSTS, "r", encoding="utf-8") as infile, \
+         open(OUTPUT_FILE, "w", encoding="utf-8") as outfile:
 
-        # -----------------------------
-        # CLEAN FIELDS
-        # -----------------------------
-        title = clean_text(post.get("title"))
-        body = clean_text(post.get("selftext"))
+        for line in infile:
+            line = line.strip()
+            if not line:
+                continue
 
-        score = post.get("score", 0)
+            try:
+                post = orjson.loads(line)
+            except Exception:
+                continue
 
-        # -----------------------------
-        # SIMPLE TAGGING SYSTEM
-        # -----------------------------
-        text_blob = (title + " " + body).lower()
+            if post.get("subreddit") != "HouseOfTheDragon":
+                continue
 
-        tags = []
+            posts_loaded += 1
 
-        for keyword in [
-            "daemon",
-            "rhaenyra",
-            "alicent",
-            "aegon",
-            "viserys",
-            "dragon",
-            "succession"
-        ]:
-            if keyword in text_blob:
-                tags.append(keyword)
+            if not filter_post(post, FILTER_RULES_POSTS):
+                continue
 
-        # -----------------------------
-        # BUILD + WRITE CHUNK
-        # -----------------------------
-        chunk = {
-            "chunk_id": f"post_{post.get('id', '')}",
-            "source_type": "post",
-            "post_id": post.get("id", ""),
-            "title": title,
-            "text": f"{title} {body}".strip(),
-            "score": score,
-            "num_comments": post.get("num_comments", 0),
-            "tags": tags,
-            "created_utc": post.get("created_utc", 0),
-        }
-        outfile.write(orjson.dumps(chunk).decode() + "\n")
+            posts_passed += 1
+
+            post["title"]    = clean_text(post.get("title"))
+            post["selftext"] = clean_text(post.get("selftext"))
+
+            post_id  = post.get("id", "")
+            comments = comments_by_post.get(post_id, [])
+
+            chunk = create_chunk(post, comments)
+            outfile.write(orjson.dumps(chunk).decode() + "\n")
+            chunks_written += 1
+
+            if args.limit and chunks_written >= args.limit:
+                break
+
+            if chunks_written % 100 == 0:
+                print(f"  Progress: {chunks_written} chunks written...")
+
+    print("\n" + "=" * 50)
+    print("  PIPELINE COMPLETE")
+    print("=" * 50)
+    print(f"  Posts loaded (HOTD only) : {posts_loaded}")
+    print(f"  Posts passed filter      : {posts_passed}")
+    print(f"  Chunks written           : {chunks_written}")
+    print(f"  Output                   : {OUTPUT_FILE}")
+    print("=" * 50 + "\n")
+
+
+if __name__ == "__main__":
+    main()
