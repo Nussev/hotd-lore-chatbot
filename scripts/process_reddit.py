@@ -1,13 +1,14 @@
 import orjson
 from tqdm import tqdm
 import os
+print("🚀 Script started")
 
 #-------------------
 # FILE PATHS
 #-------------------
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INPUT_FILE = os.path.join(ROOT, "data_raw", "r_HouseOfTheDragon_posts.jsonl")
-OUTPUT_FILE = os.path.join(ROOT, "data_clean", "hotd_clean_posts.txt")
+OUTPUT_FILE = os.path.join(ROOT, "data_clean", "hotd_clean_posts.jsonl")
 
 # -----------------------------
 # FILTER SETTINGS
@@ -101,10 +102,17 @@ with open(INPUT_FILE, "r", encoding="utf-8") as infile, \
                 tags.append(keyword)
 
         # -----------------------------
-        # WRITE CLEAN OUTPUT
+        # BUILD + WRITE CHUNK
         # -----------------------------
-        outfile.write(f"TITLE: {title}\n")
-        outfile.write(f"SCORE: {score}\n")
-        outfile.write(f"TAGS: {', '.join(tags)}\n")
-        outfile.write(f"POST: {body}\n")
-        outfile.write("\n" + "=" * 80 + "\n\n")
+        chunk = {
+            "chunk_id": f"post_{post.get('id', '')}",
+            "source_type": "post",
+            "post_id": post.get("id", ""),
+            "title": title,
+            "text": f"{title} {body}".strip(),
+            "score": score,
+            "num_comments": post.get("num_comments", 0),
+            "tags": tags,
+            "created_utc": post.get("created_utc", 0),
+        }
+        outfile.write(orjson.dumps(chunk).decode() + "\n")
