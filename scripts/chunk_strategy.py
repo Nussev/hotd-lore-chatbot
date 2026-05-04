@@ -31,6 +31,7 @@ def create_chunk(post, comments):
         "source_type": "post_with_comments",
         "primary": {
             "text": full_text,
+            
             "char_count": char_count,
             "token_estimate": char_count // 4,
         },
