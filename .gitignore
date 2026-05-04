@@ -8,3 +8,6 @@ data_clean/
 
 # OS
 .DS_Store
+
+# Secrets
+.env
