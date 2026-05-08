@@ -117,10 +117,19 @@ def get_answer(query: str, retrieved_chunks: list, history: list[dict] | None = 
     messages.append({"role": "user", "content": _build_user_message(query, retrieved_chunks)})
 
     # Step 2: Call the Anthropic API
+    # The system prompt is wrapped in a content block with cache_control so
+    # Anthropic caches it server-side. Repeated calls within 5 minutes reuse
+    # the cache and are charged at ~10% of the normal input token cost.
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
+        system=[
+            {
+                "type": "text",
+                "text": SYSTEM_PROMPT,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
         messages=messages,
     )
 
