@@ -6,3 +6,5 @@ streamlit
 orjson
 tqdm
 python-dotenv
+torch
+transformers
