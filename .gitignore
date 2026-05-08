@@ -6,6 +6,7 @@ __pycache__/
 # Data (important)
 data_raw/
 data_clean/
+!data_clean/hotd_chunks.jsonl
 
 # OS
 .DS_Store
