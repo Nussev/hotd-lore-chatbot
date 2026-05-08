@@ -4,6 +4,9 @@ builds a prompt, calls Claude, and returns the answer + source links.
 """
 
 import anthropic
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # CLIENT + CONSTANTS
@@ -83,7 +86,7 @@ def _build_user_message(query: str, chunks: list) -> str:
 # PUBLIC API
 # ---------------------------------------------------------------------------
 
-def get_answer(query: str, retrieved_chunks: list) -> dict:
+def get_answer(query: str, retrieved_chunks: list, history: list[dict] | None = None) -> dict:
     """
     Call Claude with the question + retrieved context, return answer + sources.
 
@@ -92,6 +95,10 @@ def get_answer(query: str, retrieved_chunks: list) -> dict:
         retrieved_chunks — list of dicts from retriever.retrieve(), each with:
                              chunk_id, post_id, post_title, post_score,
                              subreddit, distance, text
+        history          — optional list of prior turns, each a dict with
+                             "question" and "answer" keys. Prior turns are sent
+                             as bare user/assistant pairs (no injected sources)
+                             so the context stays compact.
 
     Returns a dict with:
         "answer"  — Claude's response as a string
@@ -99,17 +106,22 @@ def get_answer(query: str, retrieved_chunks: list) -> dict:
                     (a Reddit link constructed from the post_id)
     """
 
-    # Step 1: Format the chunks + question into one big user message
-    user_message = _build_user_message(query, retrieved_chunks)
+    # Step 1: Build messages list — prior turns first, then the current question
+    messages = []
+
+    for turn in (history or []):
+        messages.append({"role": "user",      "content": turn["question"]})
+        messages.append({"role": "assistant", "content": turn["answer"]})
+
+    # Current turn gets the retrieved chunks injected so Claude has fresh context
+    messages.append({"role": "user", "content": _build_user_message(query, retrieved_chunks)})
 
     # Step 2: Call the Anthropic API
     response = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
-        messages=[
-            {"role": "user", "content": user_message}
-        ],
+        messages=messages,
     )
 
     # Step 3: Pull the answer text out of the response

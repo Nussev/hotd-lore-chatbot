@@ -1,5 +1,8 @@
-numpy==2.4.4
-orjson==3.11.8
-sentence-transformers==5.4.1
-tqdm==4.67.3
-faiss-cpu==1.13.2
+anthropic
+sentence-transformers
+faiss-cpu
+numpy
+streamlit
+orjson
+tqdm
+python-dotenv
