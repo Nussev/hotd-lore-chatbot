@@ -1,7 +1,6 @@
 import sys
 import os
 import json
-from pathlib import Path
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,6 +11,7 @@ load_dotenv()
 import streamlit as st
 from rag.retriever import retrieve, is_off_topic
 from rag.chat import get_answer
+from core.config import FEEDBACK_LOG, OFF_TOPIC_REPLY
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
@@ -25,17 +25,15 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 # FEEDBACK LOGGING
 # ---------------------------------------------------------------------------
-_LOG_FILE = Path(__file__).parent.parent / "logs" / "feedback.jsonl"
-
 def log_feedback(question: str, answer: str, rating: str) -> None:
-    _LOG_FILE.parent.mkdir(exist_ok=True)
+    FEEDBACK_LOG.parent.mkdir(exist_ok=True)
     entry = {
         "timestamp": datetime.utcnow().isoformat(),
         "question": question,
         "answer": answer,
         "rating": rating,
     }
-    with open(_LOG_FILE, "a", encoding="utf-8") as f:
+    with open(FEEDBACK_LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -135,19 +133,6 @@ with st.form(key="chat_form", clear_on_submit=True):
 
 
 # ---------------------------------------------------------------------------
-# OFF-TOPIC MESSAGE
-# ---------------------------------------------------------------------------
-_OFF_TOPIC_REPLY = (
-    "This chatbot is built specifically for **House of the Dragon** fandom discussion "
-    "— it only knows what r/HouseOfTheDragon has talked about. I can't help with that one.\n\n"
-    "Try asking something like:\n"
-    "- *What does the fandom think of Daemon?*\n"
-    "- *Who rides Caraxes?*\n"
-    "- *How did people react to the season 2 finale?*"
-)
-
-
-# ---------------------------------------------------------------------------
 # HANDLE SUBMIT
 # ---------------------------------------------------------------------------
 if submitted and user_input.strip():
@@ -162,7 +147,7 @@ if submitted and user_input.strip():
             if is_off_topic(chunks):
                 st.session_state.history.append({
                     "question": user_input,
-                    "answer":   _OFF_TOPIC_REPLY,
+                    "answer":   OFF_TOPIC_REPLY,
                     "sources":  [],
                     "off_topic": True,
                     "rating":   None,

@@ -3,27 +3,14 @@ retriever.py — loads the FAISS index and chunk data once at startup,
 then exposes a single function: retrieve(query) → list of top results.
 """
 
-import os
 import json
 
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
-# ---------------------------------------------------------------------------
-# PATHS
-# ---------------------------------------------------------------------------
-ROOT       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INDEX_FILE = os.path.join(ROOT, "embeddings", "hotd.index")
-META_FILE  = os.path.join(ROOT, "embeddings", "hotd_meta.jsonl")
-CHUNKS_FILE = os.path.join(ROOT, "data_clean", "hotd_chunks.jsonl")
-
-# WARNING: this model MUST match the one used in embed_chunks.py.
-# If you change the embedding model there, change it here too, then
-# re-run embed_chunks.py and build_index.py before querying again.
-MODEL_NAME = "all-MiniLM-L6-v2"
-
-TOP_K = 5  # number of results to return per query
+from core.config import EMBEDDING_MODEL, TOP_K, OFF_TOPIC_THRESHOLD
+from core.config import INDEX_FILE, META_FILE, CHUNKS_FILE
 
 # ---------------------------------------------------------------------------
 # LOAD EVERYTHING ONCE AT MODULE LEVEL
@@ -34,7 +21,7 @@ TOP_K = 5  # number of results to return per query
 # not once per query call.
 # ---------------------------------------------------------------------------
 print("[retriever] Loading FAISS index...")
-_index = faiss.read_index(INDEX_FILE)
+_index = faiss.read_index(str(INDEX_FILE))
 
 print("[retriever] Loading metadata...")
 _meta = []
@@ -62,8 +49,8 @@ with open(CHUNKS_FILE, "r", encoding="utf-8") as f:
         except json.JSONDecodeError:
             continue
 
-print(f"[retriever] Loading embedding model: {MODEL_NAME}")
-_model = SentenceTransformer(MODEL_NAME)
+print(f"[retriever] Loading embedding model: {EMBEDDING_MODEL}")
+_model = SentenceTransformer(EMBEDDING_MODEL)
 
 print(f"[retriever] Ready — {_index.ntotal} chunks indexed.\n")
 
@@ -126,17 +113,6 @@ def retrieve(query: str) -> list[dict]:
         })
 
     return results
-
-
-# ---------------------------------------------------------------------------
-# OFF-TOPIC DETECTION
-#
-# IndexFlatL2 returns squared L2 distances. For all-MiniLM-L6-v2 (unit vectors):
-#   squared_L2 = 2 * (1 - cosine_similarity)
-# A threshold of 1.5 ≈ cosine similarity of 0.25 — essentially no overlap.
-# Tune this down if on-topic queries get flagged, up if garbage slips through.
-# ---------------------------------------------------------------------------
-OFF_TOPIC_THRESHOLD = 1.5
 
 
 def is_off_topic(chunks: list[dict]) -> bool:
