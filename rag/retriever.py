@@ -126,3 +126,21 @@ def retrieve(query: str) -> list[dict]:
         })
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# OFF-TOPIC DETECTION
+#
+# IndexFlatL2 returns squared L2 distances. For all-MiniLM-L6-v2 (unit vectors):
+#   squared_L2 = 2 * (1 - cosine_similarity)
+# A threshold of 1.5 ≈ cosine similarity of 0.25 — essentially no overlap.
+# Tune this down if on-topic queries get flagged, up if garbage slips through.
+# ---------------------------------------------------------------------------
+OFF_TOPIC_THRESHOLD = 1.5
+
+
+def is_off_topic(chunks: list[dict]) -> bool:
+    """Return True if the best retrieved chunk is too distant from the query."""
+    if not chunks:
+        return True
+    return chunks[0]["distance"] > OFF_TOPIC_THRESHOLD

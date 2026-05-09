@@ -13,3 +13,6 @@ data_clean/
 
 # Secrets
 .env
+
+# Feedback logs (may contain user queries)
+logs/
