@@ -1,7 +1,5 @@
 import sys
 import os
-import json
-from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -11,7 +9,8 @@ load_dotenv()
 import streamlit as st
 from rag.retriever import retrieve, is_off_topic
 from rag.chat import get_answer
-from core.config import FEEDBACK_LOG, OFF_TOPIC_REPLY
+from core.config import OFF_TOPIC_REPLY
+from core.feedback import log_feedback
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
@@ -23,20 +22,10 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# FEEDBACK LOGGING
+# FEEDBACK CALLBACK
+# Streamlit on_click callbacks must live in the app layer because they touch
+# st.session_state. log_feedback() (the pure write) lives in core/feedback.py.
 # ---------------------------------------------------------------------------
-def log_feedback(question: str, answer: str, rating: str) -> None:
-    FEEDBACK_LOG.parent.mkdir(exist_ok=True)
-    entry = {
-        "timestamp": datetime.utcnow().isoformat(),
-        "question": question,
-        "answer": answer,
-        "rating": rating,
-    }
-    with open(FEEDBACK_LOG, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry) + "\n")
-
-
 def _set_rating(idx: int, rating: str, question: str, answer: str) -> None:
     st.session_state.history[idx]["rating"] = rating
     log_feedback(question, answer, rating)
