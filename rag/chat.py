@@ -3,21 +3,8 @@ chat.py — takes a user question and retrieved chunks from retriever.py,
 builds a prompt, calls Claude, and returns the answer + source links.
 """
 
-import anthropic
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# ---------------------------------------------------------------------------
-# CLIENT + CONSTANTS
-# ---------------------------------------------------------------------------
-
-# The client reads ANTHROPIC_API_KEY from your environment automatically.
-# Get a key at: https://console.anthropic.com/
-client = anthropic.Anthropic()
-
-MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 1024
+from core.config import CLAUDE_MODEL, MAX_TOKENS
+from core.client import client
 
 # ---------------------------------------------------------------------------
 # SYSTEM PROMPT
@@ -121,7 +108,7 @@ def get_answer(query: str, retrieved_chunks: list, history: list[dict] | None = 
     # Anthropic caches it server-side. Repeated calls within 5 minutes reuse
     # the cache and are charged at ~10% of the normal input token cost.
     response = client.messages.create(
-        model=MODEL,
+        model=CLAUDE_MODEL,
         max_tokens=MAX_TOKENS,
         system=[
             {
