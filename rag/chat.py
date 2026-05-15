@@ -3,15 +3,8 @@ chat.py — takes a user question and retrieved chunks from retriever.py,
 builds a prompt, calls Claude, and returns the answer + source links.
 """
 
-import anthropic
-from dotenv import load_dotenv
-
 from core.config import CLAUDE_MODEL, MAX_TOKENS
-
-load_dotenv()
-
-# The client reads ANTHROPIC_API_KEY from your environment automatically.
-client = anthropic.Anthropic()
+from core.client import client
 
 # ---------------------------------------------------------------------------
 # SYSTEM PROMPT
