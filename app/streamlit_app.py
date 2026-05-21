@@ -16,7 +16,7 @@ from core.feedback import log_feedback
 # PAGE CONFIG
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="HOTD Fandom Chat",
+    page_title="The Maester's Archive",
     page_icon="🐉",
     layout="centered",
 )
@@ -58,9 +58,12 @@ if "history" not in st.session_state:
 # ---------------------------------------------------------------------------
 # HEADER
 # ---------------------------------------------------------------------------
-st.title("🐉 House of the Dragon Fandom Chat")
-st.caption("Ask anything about the fandom — powered by Reddit discourse")
+st.title("🐉 The Maester's Archive")
+st.caption("Consult the scrolls — drawn from the fandom's own words")
 st.divider()
+
+if not st.session_state.history:
+    st.markdown("*The ravens have returned. Ask your question and the archive shall answer.*")
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +79,7 @@ for i, entry in enumerate(st.session_state.history):
         st.write(entry["question"])
 
     with st.chat_message("assistant"):
+        st.markdown("*~ The Maester consults the scrolls ~*")
         st.write(entry["answer"])
 
         if not entry.get("off_topic"):
@@ -115,10 +119,10 @@ for i, entry in enumerate(st.session_state.history):
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input(
         "Your question",
-        placeholder="e.g. Who rides Caraxes?",
+        placeholder="What do you wish to know, my lord?",
         label_visibility="collapsed",
     )
-    submitted = st.form_submit_button("Ask")
+    submitted = st.form_submit_button("Send Raven")
 
 
 # ---------------------------------------------------------------------------
@@ -130,7 +134,7 @@ if submitted and user_input.strip():
         st.write(user_input)
 
     with st.chat_message("assistant"):
-        with st.spinner("Searching Reddit discourse and asking Claude..."):
+        with st.spinner("The Maester searches the archive..."):
             chunks = retrieve_fn(user_input)
 
             if is_off_topic(chunks):
