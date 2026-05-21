@@ -134,6 +134,7 @@ def get_answer(query: str, retrieved_chunks: list, history: list[dict] | None = 
     sources = [
         {
             "post_title": chunk.get("post_title", "Untitled"),
+            "post_score": chunk.get("post_score", 0),
             "url": (
                 f"https://reddit.com/r/HouseOfTheDragon/comments/"
                 f"{chunk.get('post_id', '')}"
