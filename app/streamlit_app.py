@@ -30,7 +30,7 @@ RAVENS_HTML = """
 .raven-stage {
   position: relative;
   height: 160px;
-  background: linear-gradient(160deg, #0a0a28 0%, #0e0e38 60%, #080820 100%);
+  background: linear-gradient(160deg, #1c1c3a 0%, #232345 60%, #181830 100%);
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 6px;
@@ -107,66 +107,6 @@ RAVENS_HTML = """
 </div>
 """
 
-DRAGON_IDLE_HTML = """
-<style>
-@keyframes d-breathe {
-  0%, 100% { transform: translateY(0px)   scale(1);    }
-  50%       { transform: translateY(-2px) scale(1.025); }
-}
-@keyframes d-blink {
-  0%, 90%, 100% { transform: scaleY(1);   }
-  95%            { transform: scaleY(0.1); }
-}
-@keyframes d-wing-sway {
-  0%, 100% { transform: rotate(0deg);  }
-  50%       { transform: rotate(-6deg); }
-}
-</style>
-<div style="display:flex;justify-content:center;margin:8px 0 4px;">
-<div style="background:#0a0a14;border-radius:10px;padding:18px 24px;display:inline-block;">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 120" width="168" height="144">
-  <g style="transform-origin:100px 90px; animation: d-breathe 3.8s ease-in-out infinite;">
-    <g style="transform-origin:105px 70px; animation: d-wing-sway 3.8s ease-in-out infinite;">
-      <path d="M105 70 Q118 48 130 52 Q128 60 122 66 Q130 58 132 68 Q126 65 120 72 Q128 64 128 74 Q120 70 112 76Z"
-            fill="#5a0000" opacity="0.85"/>
-    </g>
-    <path d="M88 118 Q95 100 100 82 Q100 74 94 68" stroke="#8B0000" stroke-width="18"
-          fill="none" stroke-linecap="round"/>
-    <path d="M82 118 Q90 100 94 82 Q94 74 90 70" stroke="#a83030" stroke-width="7"
-          fill="none" stroke-linecap="round"/>
-    <path d="M97 88 L103 80 M100 76 L107 68 M102 68 L108 60"
-          stroke="#6a0000" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-    <path d="M94 68 Q90 56 82 48 Q70 38 52 32 Q34 26 18 30 Q6 35 4 46 Q2 56 8 64
-             Q14 72 28 74 Q50 78 70 72 Q84 68 94 68Z" fill="#8B0000"/>
-    <path d="M18 30 Q36 22 55 28 Q70 32 82 42"
-          stroke="#5a0000" stroke-width="5" fill="none" stroke-linecap="round"/>
-    <path d="M22 36 Q38 30 56 34 Q68 38 78 46"
-          stroke="#6e1010" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <ellipse cx="7" cy="50" rx="6" ry="8" fill="#7a0000"/>
-    <path d="M54 28 Q50 14 44 8 Q50 16 58 24" fill="#3d0000"/>
-    <path d="M66 30 Q64 18 60 14 Q65 20 68 28" fill="#3d0000"/>
-    <ellipse cx="36" cy="40" rx="8" ry="7" fill="#3d0000"/>
-    <ellipse cx="36" cy="40" rx="6" ry="5.5" fill="#FFD700"/>
-    <g style="transform-origin:36px 40px; animation: d-blink 5s ease-in-out infinite;">
-      <ellipse cx="36" cy="40" rx="2.2" ry="5.2" fill="#0d0000"/>
-    </g>
-    <circle cx="33" cy="37" r="1.2" fill="rgba(255,255,220,0.6)"/>
-    <ellipse cx="6" cy="46" rx="2" ry="1.5" fill="#4a0000" transform="rotate(-15,6,46)"/>
-    <path d="M12 72 L14 80 M19 74 L20 83 M26 75 L27 84 M33 75 L34 83 M40 74 L40 82"
-          stroke="#ddd8c8" stroke-width="2.8" stroke-linecap="round" fill="none"/>
-    <g style="transform-origin:88px 68px;">
-      <path d="M88 68 Q80 74 62 78 Q42 82 22 80 Q10 78 6 72 Q2 66 6 62
-               Q10 68 24 70 Q46 74 66 70 Q80 67 88 68Z" fill="#7a1010"/>
-      <path d="M8 68 Q5 74 10 78 Q26 86 50 84 Q68 82 82 74"
-            stroke="#5a0808" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <path d="M16 70 L15 62 M23 72 L22 63 M30 73 L29 64 M37 73 L36 65 M44 72 L43 64"
-            stroke="#ddd8c8" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-    </g>
-  </g>
-</svg>
-</div>
-</div>
-"""
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
@@ -185,6 +125,44 @@ st.set_page_config(
 def _set_rating(idx: int, rating: str, question: str, answer: str) -> None:
     st.session_state.history[idx]["rating"] = rating
     log_feedback(question, answer, rating)
+
+
+_HOUSE_CONFIG = {
+    "black": {
+        "seal":    "#6b0e1e",
+        "label":   "🖤 Team Black — Rhaenyra Targaryen",
+        "caption": "Fire and Blood. The realm is hers by right.",
+        "badge_bg": "#3a0810",
+        "badge_text": "#e8b4bc",
+    },
+    "green": {
+        "seal":    "#1e4d16",
+        "label":   "💚 Team Green — Alicent Hightower",
+        "caption": "Duty and honour. The realm must have order.",
+        "badge_bg": "#112b0a",
+        "badge_text": "#a8d4a0",
+    },
+}
+
+
+def _source_card_html(source: dict, house: str) -> str:
+    cfg = _HOUSE_CONFIG[house]
+    score = source.get("post_score", 0)
+    title = source.get("post_title", "Untitled")
+    url   = source.get("url", "#")
+    return (
+        f'<div style="background:linear-gradient(135deg,#1e1a0e 0%,#2a2415 100%);'
+        f'border:1px solid #6b5a2e;border-radius:8px;padding:12px 14px;'
+        f'margin:6px 0;display:flex;align-items:center;gap:12px;">'
+        f'<div style="min-width:44px;height:44px;background:{cfg["seal"]};'
+        f'border-radius:50%;display:flex;align-items:center;justify-content:center;'
+        f'font-size:11px;font-weight:bold;color:#fff;font-family:Georgia,serif;'
+        f'box-shadow:0 2px 6px rgba(0,0,0,0.6);flex-shrink:0;'
+        f'border:2px solid rgba(255,255,255,0.15);">{score}</div>'
+        f'<a href="{url}" target="_blank" style="color:#d4c07a;font-family:Georgia,serif;'
+        f'font-size:13px;text-decoration:none;line-height:1.45;">{title}</a>'
+        f'</div>'
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +187,27 @@ def load_retriever():
 # ---------------------------------------------------------------------------
 if "history" not in st.session_state:
     st.session_state.history = []
+if "house" not in st.session_state:
+    st.session_state.house = "black"
+
+
+# ---------------------------------------------------------------------------
+# SIDEBAR — HOUSE SELECTOR
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    st.markdown("## ⚔️ Choose Your House")
+    selected = st.radio(
+        "house",
+        options=list(_HOUSE_CONFIG.keys()),
+        format_func=lambda h: _HOUSE_CONFIG[h]["label"],
+        index=list(_HOUSE_CONFIG.keys()).index(st.session_state.house),
+        label_visibility="collapsed",
+    )
+    if selected != st.session_state.house:
+        st.session_state.house = selected
+        st.rerun()
+    cfg = _HOUSE_CONFIG[st.session_state.house]
+    st.caption(cfg["caption"])
 
 
 # ---------------------------------------------------------------------------
@@ -216,9 +215,16 @@ if "history" not in st.session_state:
 # ---------------------------------------------------------------------------
 st.title("🐉 The Maester's Archive")
 st.caption("Consult the scrolls — drawn from the fandom's own words")
-st.divider()
 
-st.markdown(DRAGON_IDLE_HTML, unsafe_allow_html=True)
+cfg = _HOUSE_CONFIG[st.session_state.house]
+st.markdown(
+    f'<div style="display:inline-block;background:{cfg["badge_bg"]};'
+    f'color:{cfg["badge_text"]};padding:3px 12px;border-radius:12px;'
+    f'font-size:12px;font-family:Georgia,serif;margin-bottom:4px;">'
+    f'{cfg["label"]}</div>',
+    unsafe_allow_html=True,
+)
+st.divider()
 
 if not st.session_state.history:
     st.markdown("*The ravens have returned. Ask your question and the archive shall answer.*")
@@ -241,9 +247,12 @@ for i, entry in enumerate(st.session_state.history):
         st.write(entry["answer"])
 
         if not entry.get("off_topic"):
-            with st.expander("Sources"):
+            with st.expander("📜 Scrolls consulted"):
                 for source in entry["sources"]:
-                    st.markdown(f"- [{source['post_title']}]({source['url']})")
+                    st.markdown(
+                        _source_card_html(source, st.session_state.house),
+                        unsafe_allow_html=True,
+                    )
 
             # Feedback — show result if already rated, otherwise show buttons
             rating = entry.get("rating")
